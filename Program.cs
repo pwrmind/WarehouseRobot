@@ -9,11 +9,11 @@ public class Program
         var obstacles = new List<(int, int)>
         {
             (2, 3), (3, 3), (4, 3),  // горизонтальная стена
-            (5, 1), (5, 2), (5, 3), (5, 4)   // вертикальные блоки
+            (5, 1), (5, 2), (5, 3),  // вертикальные блоки
         };
 
         // Инициализируем 🤖 Робота:
-        var robot = new WarehouseRobot(1, 1, Direction.East, 5, 5, obstacles);
+        var robot = new WarehouseRobot(1, 1, Direction.East, 6, 3, obstacles);
         robot.PickPackage();
 
         var behaviourTree = new RobotBehaviourTree(robot).BuildTree();
