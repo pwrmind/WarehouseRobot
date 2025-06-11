@@ -61,8 +61,8 @@ Selector (root)
 ### Running the Simulation
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/warehouse-robot-simulation.git
-cd warehouse-robot-simulation
+git clone https://github.com/pwrmind/WarehouseRobot.git
+cd WarehouseRobot
 ```
 
 2. Run the program:
