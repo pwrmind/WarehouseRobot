@@ -1,4 +1,4 @@
-﻿# Warehouse Robot Simulation with Behavior Tree
+﻿# Warehouse 🤖 Robot Simulation with Behavior Tree
 
 This project simulates a warehouse robot navigating a grid environment with obstacles to deliver a package. The robot uses a Behavior Tree to make decisions about movement, obstacle avoidance, and package delivery.
 
