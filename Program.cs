@@ -12,7 +12,7 @@ public class Program
             (5, 1), (5, 2), (5, 3), (5, 4)   // вертикальные блоки
         };
 
-        // Инициализируем 🤖Робота:
+        // Инициализируем 🤖 Робота:
         var robot = new WarehouseRobot(1, 1, Direction.East, 5, 5, obstacles);
         robot.PickPackage();
 
@@ -24,7 +24,7 @@ public class Program
         while (!robot.IsPackageDelivered() && tickCount < maxTicks)
         {
             Console.Write($"[⏱️ Такт {tickCount}]: ");
-            Console.Write($"🤖Робот на ({robot.X},{robot.Y}), смотрит {robot.Facing}. ");
+            Console.Write($"🤖 Робот на ({robot.X},{robot.Y}), смотрит {robot.Facing}. ");
 
             behaviourTree.Execute();
 
@@ -148,7 +148,7 @@ public class RobotBehaviourTree
                 )
                 // Ветка 2: Навигация к цели
                 .Sequence(navigation => navigation
-                    .Condition(() => !_robot.IsAtTarget()) // Условие: 🤖Робот НЕ в цели
+                    .Condition(() => !_robot.IsAtTarget()) // Условие: 🤖 Робот НЕ в цели
                     .Selector(movement => movement
                         // Стратегия 1: Движение вперед
                         .Sequence(moveForward => moveForward
