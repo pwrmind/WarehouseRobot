@@ -1,7 +1,10 @@
-﻿public class Program
+﻿using System.Text;
+
+public class Program
 {
     public static void Main()
     {
+        Console.OutputEncoding = Encoding.UTF8;
         // Создаем окружение с препятствиями
         var obstacles = new List<(int, int)>
         {
@@ -21,7 +24,7 @@
         while (!robot.IsPackageDelivered() && tickCount < maxTicks)
         {
             Console.Write($"[Такт {tickCount}]: ");
-            Console.WriteLine($"Робот на ({robot.X},{robot.Y}), смотрит {robot.Facing}. ");
+            Console.Write($"Робот на ({robot.X},{robot.Y}), смотрит {robot.Facing}. ");
 
             behaviourTree.Execute();
 
@@ -136,7 +139,6 @@ public class RobotBehaviourTree
     public INode BuildTree()
     {
         return new BehaviourTreeBuilder()
-            // Корневой узел: Selector (выполняет первую успешную ветку)
             .Selector(root => root
                 // Ветка 1: Доставка груза
                 .Sequence(delivery => delivery
@@ -147,8 +149,8 @@ public class RobotBehaviourTree
                 // Ветка 2: Навигация к цели
                 .Sequence(navigation => navigation
                     .Condition(() => !_robot.IsAtTarget()) // Условие: робот НЕ в цели
-                    .Selector(movement => movement          // Выбор стратегии движения
-                                                            // Стратегия 1: Движение вперед
+                    .Selector(movement => movement
+                        // Стратегия 1: Движение вперед
                         .Sequence(moveForward => moveForward
                             .Condition(() => _robot.IsFacingTarget() && !_robot.IsFacingObstacle())
                             .Action(_robot.MoveForward)
@@ -157,15 +159,21 @@ public class RobotBehaviourTree
                         .Sequence(avoidObstacle => avoidObstacle
                             .Condition(() => _robot.IsFacingObstacle())
                             .Selector(avoid => avoid
-                                // Вариант 1: Повернуть налево + двигаться
-                                .Sequence(turnAndMove => turnAndMove
+                                // Вариант 1: Повернуть налево
+                                .Sequence(turnLeft => turnLeft
                                     .Action(_robot.TurnLeft)
+                                    .Condition(() => !_robot.IsFacingObstacle()) // Проверка на возможность движения
                                     .Action(_robot.MoveForward)
                                 )
-                                // Вариант 2: Повернуть направо + двигаться
-                                .Sequence(turnAndMove => turnAndMove
+                                // Вариант 2: Повернуть направо
+                                .Sequence(turnRight => turnRight
                                     .Action(_robot.TurnRight)
+                                    .Condition(() => !_robot.IsFacingObstacle()) // Проверка на возможность движения
                                     .Action(_robot.MoveForward)
+                                )
+                                // Вариант 3: Вернуться назад, если не удается обойти
+                                .Sequence(moveBackward => moveBackward
+                                    .Action(_robot.MoveBackward)
                                 )
                             )
                         )
@@ -203,10 +211,11 @@ public class WarehouseRobot
     private readonly int _targetY;
     public Direction Facing { get; private set; }
     public bool HasPackage { get; private set; }
-    
-    private readonly List<(int, int)> _obstacles;
 
-    public WarehouseRobot(int startX, int startY, Direction startDir, 
+    private readonly List<(int, int)> _obstacles;
+    private readonly HashSet<(int, int)> _visitedPositions; // Для хранения посещенных позиций
+
+    public WarehouseRobot(int startX, int startY, Direction startDir,
                         int targetX, int targetY, List<(int, int)> obstacles)
     {
         X = startX;
@@ -215,10 +224,45 @@ public class WarehouseRobot
         _targetX = targetX;
         _targetY = targetY;
         _obstacles = obstacles;
+        _visitedPositions = new HashSet<(int, int)>();
+        _visitedPositions.Add((X, Y)); // Добавляем начальную позицию
     }
+
+    public bool MoveForward()
+    {
+        var (dx, dy) = Facing switch
+        {
+            Direction.North => (0, 1),
+            Direction.East => (1, 0),
+            Direction.South => (0, -1),
+            Direction.West => (-1, 0),
+            _ => (0, 0)
+        };
+
+        return MoveIfPossible(X + dx, Y + dy);
+    }
+
+    private bool MoveIfPossible(int newX, int newY)
+    {
+        if (_obstacles.Contains((newX, newY)) || _visitedPositions.Contains((newX, newY)))
+        {
+            Console.WriteLine($"🧱 Препятствие на [{newX},{newY}] или уже посещено");
+            return false;
+        }
+
+        X = newX;
+        Y = newY;
+        _visitedPositions.Add((X, Y)); // Добавляем новую позицию в память
+        Console.WriteLine($"🛒 Переместился на [{X},{Y}]");
+        return true;
+    }
+
+    // Остальные методы остаются без изменений
 
     public bool ShouldTurnRight()
     {
+        //if (IsFacingObstacle()) return true; // Приоритет: уйти от стены
+
         var dx = _targetX - X;
         var dy = _targetY - Y;
         if (dx == 0 && dy == 0) return false;
@@ -306,19 +350,19 @@ public class WarehouseRobot
         return false;
     }
 
-    public bool MoveForward()
-    {
-        var (dx, dy) = Facing switch
-        {
-            Direction.North => (0, 1),
-            Direction.East => (1, 0),
-            Direction.South => (0, -1),
-            Direction.West => (-1, 0),
-            _ => (0, 0)
-        };
+    //public bool MoveForward()
+    //{
+    //    var (dx, dy) = Facing switch
+    //    {
+    //        Direction.North => (0, 1),
+    //        Direction.East => (1, 0),
+    //        Direction.South => (0, -1),
+    //        Direction.West => (-1, 0),
+    //        _ => (0, 0)
+    //    };
 
-        return MoveIfPossible(X + dx, Y + dy);
-    }
+    //    return MoveIfPossible(X + dx, Y + dy);
+    //}
 
     public bool MoveBackward()
     {
@@ -334,31 +378,31 @@ public class WarehouseRobot
         return MoveIfPossible(X + dx, Y + dy);
     }
 
-    private bool MoveIfPossible(int newX, int newY)
-    {
-        if (_obstacles.Contains((newX, newY)))
-        {
-            Console.WriteLine($"Препятствие на [{newX},{newY}]");
-            return false;
-        }
+    //private bool MoveIfPossible(int newX, int newY)
+    //{
+    //    if (_obstacles.Contains((newX, newY)))
+    //    {
+    //        Console.WriteLine($"🧱 Препятствие на [{newX},{newY}]");
+    //        return false;
+    //    }
 
-        X = newX;
-        Y = newY;
-        Console.WriteLine($"Переместился на [{X},{Y}]");
-        return true;
-    }
+    //    X = newX;
+    //    Y = newY;
+    //    Console.WriteLine($"🛒 Переместился на [{X},{Y}]");
+    //    return true;
+    //}
 
     public bool TurnLeft()
     {
         Facing = (Direction)(((int)Facing + 3) % 4);
-        Console.WriteLine($"Повернул налево, теперь смотрю {Facing}");
+        Console.WriteLine($"🔃 Повернул налево ⬅️, теперь смотрю {Facing}");
         return true;
     }
 
     public bool TurnRight()
     {
         Facing = (Direction)(((int)Facing + 1) % 4);
-        Console.WriteLine($"Повернул направо, теперь смотрю {Facing}");
+        Console.WriteLine($"🔃 Повернул направо ➡️, теперь смотрю {Facing}");
         return true;
     }
 
